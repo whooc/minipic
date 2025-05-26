@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>图床上传</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #ffffff;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #banner {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background-color: #28a745;
+      color: white;
+      text-align: center;
+      padding: 10px;
+      display: none;
+      z-index: 1000;
+    }
+    #banner.error {
+      background-color: #dc3545;
+    }
+    .container {
+      width: 100%;
+      max-width: 1000px;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    h2 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 24px;
+      flex-wrap: wrap;
+    }
+    h2 img {
+      height: 28px;
+    }
+    a {
+      color: #007bff;
+      text-decoration: none;
+      margin-right: 10px;
+    }
+    .dropzone {
+      width: 100%;
+      height: 180px;
+      border: 2px dashed #bbb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 20px 0;
+      border-radius: 10px;
+      color: #999;
+      background: #fafafa;
+      text-align: center;
+    }
+    button {
+      padding: 10px 16px;
+      font-size: 16px;
+      border: none;
+      background-color: #007bff;
+      color: #fff;
+      cursor: pointer;
+      border-radius: 5px;
+      margin: 4px;
+    }
+    button.delete {
+      background-color: #dc3545;
+    }
+    .meta-grid button {
+      width: 100%;
+    }
+    select {
+      padding: 5px;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .card {
+      background: #f9f9f9;
+      padding: 12px;
+      border-radius: 10px;
+      text-align: center;
+      border: 1px solid #ddd;
+      box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 360px;
+    }
+    .card img {
+      border-radius: 6px;
+      height: 180px;
+      object-fit: cover;
+      max-width: 100%;
+      margin-bottom: 10px;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .pagination {
+      margin-top: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .pagination a {
+      font-weight: bold;
+      color: #007bff;
+    }
+    @media screen and (max-width: 600px) {
+      h2 {
+        font-size: 20px;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      button {
+        font-size: 14px;
+        padding: 8px 12px;
+      }
+      .meta-grid {
+        grid-template-columns: 1fr;
+      }
+      .dropzone {
+        height: 140px;
+        font-size: 14px;
+      }
+      .card {
+        height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="banner">操作成功！</div>
+  <div class="container">
+    <h2>
+      <img src="https://cdn-icons-png.flaticon.com/512/2089/2089791.png" alt="图标">
+      图床上传
+    </h2>
+    <a href="/logout">登出</a> | <a href="/account">修改账号</a>
+
+    <form action="/upload" method="POST" enctype="multipart/form-data" style="margin-top: 10px;">
+      <input type="file" name="image" accept="image/*" required>
+      <button type="submit">上传</button>
+    </form>
+
+    <form method="GET" action="/" style="margin-top:10px;">
+      每页显示:
+      <select name="perPage" onchange="this.form.submit()">
+        <option value="5" <%= perPage==5 ? 'selected' : '' %>>5</option>
+        <option value="10" <%= perPage==10 ? 'selected' : '' %>>10</option>
+        <option value="50" <%= perPage==50 ? 'selected' : '' %>>50</option>
+        <option value="100" <%= perPage==100 ? 'selected' : '' %>>100</option>
+        <option value="500" <%= perPage==500 ? 'selected' : '' %>>500</option>
+        <option value="1000" <%= perPage==1000 ? 'selected' : '' %>>1000</option>
+      </select>
+      <input type="hidden" name="page" value="<%= page %>">
+    </form>
+
+    <div class="dropzone" id="dropzone">拖拽或粘贴图片到这里上传</div>
+
+    <div class="grid">
+      <% files.forEach(file => { %>
+        <div class="card">
+          <a href="/uploads/<%= file %>" target="_blank">
+            <img src="/uploads/<%= file %>" alt="uploaded">
+          </a>
+          <div class="meta-grid">
+            <button onclick="copyToClipboard('md', '<%= file %>')">复制 Markdown</button>
+            <button onclick="copyToClipboard('html', '<%= file %>')">复制 HTML</button>
+            <button onclick="copyToClipboard('url', '<%= file %>')">复制图片链接</button>
+            <button class="delete" onclick="deleteImage('<%= file %>')">删除</button>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+
+    <div class="pagination">
+      <% if (page > 1) { %>
+        <a href="/?page=<%= page - 1 %>&perPage=<%= perPage %>">⬅ 上一页</a>
+      <% } %>
+      <% if (page < totalPages) { %>
+        <a href="/?page=<%= page + 1 %>&perPage=<%= perPage %>">下一页 ➡</a>
+      <% } %>
+    </div>
+  </div>
+
+  <script>
+    function copyToClipboard(type, file) {
+      const origin = window.location.origin;
+      let text = "";
+      if (type === 'md') {
+        text = `![](${origin}/uploads/${file})`;
+      } else if (type === 'html') {
+        text = `<img src='${origin}/uploads/${file}'>`;
+      } else if (type === 'url') {
+        text = `${origin}/uploads/${file}`;
+      }
+
+      const tempInput = document.createElement("input");
+      tempInput.style.position = "absolute";
+      tempInput.style.left = "-1000px";
+      tempInput.value = text;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      try {
+        document.execCommand("copy");
+        showBanner("复制成功！", false);
+      } catch (err) {
+        alert("复制失败，请手动复制！");
+      }
+      document.body.removeChild(tempInput);
+    }
+
+    function deleteImage(filename) {
+      if (!confirm("确定删除此图片？")) return;
+      const formData = new FormData();
+      formData.append("filename", filename);
+      fetch("/delete", {
+        method: "POST",
+        body: formData
+      }).then(() => {
+        showBanner("删除成功！", true);
+        setTimeout(() => location.reload(), 500);
+      }).catch(() => {
+        alert("删除失败！");
+      });
+    }
+
+    function showBanner(message, isError) {
+      const banner = document.getElementById("banner");
+      banner.textContent = message;
+      banner.className = isError ? "error" : "";
+      banner.style.display = "block";
+      setTimeout(() => { banner.style.display = "none"; }, 2000);
+    }
+
+    const dropzone = document.getElementById('dropzone');
+    dropzone.addEventListener('dragover', e => e.preventDefault());
+    dropzone.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+      const formData = new FormData();
+      formData.append('image', file);
+      await fetch('/upload', { method: 'POST', body: formData });
+      location.reload();
+    });
+    document.addEventListener('paste', async (e) => {
+      const file = e.clipboardData.files[0];
+      if (!file) return;
+      const formData = new FormData();
+      formData.append('image', file);
+      await fetch('/upload', { method: 'POST', body: formData });
+      location.reload();
+    });
+  </script>
+</body>
+</html>

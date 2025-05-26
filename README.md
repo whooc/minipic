@@ -45,7 +45,11 @@ http://localhost:3000
 
 ## 🛠 配置账号密码
 
-在根目录下创建 `users.json` 文件：
+默认账号：admin
+默认密码：admin
+
+
+可以通过网页更改账户密码也可以在根目录下创建 `users.json` 文件：
 
 ```json
 {
